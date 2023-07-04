@@ -35,9 +35,9 @@ const server = http.createServer({}, (request, responce) => {
         switch (method) {
             case 'GET':
                 // all users
-                if (url === '/api/users') {
-                    responce.statusCode = 200;
+                if (url === '/api/users' && !urlArray[0]) {
                     const result = users.length ? users : []
+                    responce.statusCode = 200;
                     responce.end(JSON.stringify(result));
                 } else if (urlArray[0] && validateUuid(urlArray[0])) {
                     // valid user
@@ -55,13 +55,12 @@ const server = http.createServer({}, (request, responce) => {
                     responce.end(createMessage('Invalid userId'))
                 }
 
-                responce.writeHead(404);
-                responce.end('not found\n')
+
                 break;
 
             case 'POST':
 
-                urlArray
+
                 let data = '';
 
                 request.on('data', body => data += body);
@@ -69,6 +68,7 @@ const server = http.createServer({}, (request, responce) => {
 
                     const newUser = JSON.parse(data);
                     newUser.id = createUUID();
+
                     if (validateUserData(newUser)) {
                         users.push(newUser);
                         responce.statusCode = 200;
@@ -79,8 +79,7 @@ const server = http.createServer({}, (request, responce) => {
                     }
 
                 })
-                // responce.writeHead(200);
-                // responce.end('POST method called\n');
+
                 break;
             case 'PUT':
                 responce.writeHead(200);
@@ -89,8 +88,13 @@ const server = http.createServer({}, (request, responce) => {
             case 'DELETE':
 
                 if (userExists(users, urlArray[0])) {
+                    const index = users.filter((el, index) => {
+                        (el.id === urlArray[0]) && index
+                    })
+                    users.splice(index, 1)
+                    console.log(users)
                     responce.writeHead(200)
-                    responce.end('deleted')
+                    responce.end('USer with id: ' + urlArray[0] + ' deleted')
                 } else {
                     // valid uuid 
                     if (validateUuid(urlArray[0])) {
