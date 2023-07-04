@@ -1,63 +1,106 @@
 import http from 'node:http';
 import { config } from "dotenv";
-import { validate as validateUuid } from 'uuid';
-import { randomUUID } from 'crypto';
-import path from 'node:path';
-import { createMessage } from './utils/index.js';
+import { validate as validateUuid, v4 as createUUID, } from 'uuid';
+// import { randomUUID } from 'crypto';
+import {
+    createMessage,
+    validateUserData,
+    userExists
+} from './utils/index.js';
 
 config();
 
 const PORT = process.env.PORT || 4000;
 
 const users = [];
-console.log(randomUUID())
+// sample of user 
+// {
+//         'id': 'id',
+//         'name': 'someName',
+//         'age ': 'number',
+//         'hobbies ':'some hobbies'
+// }
+// console.log(randomUUID())
 
-const server = http.createServer({}, (request, res) => {
+const server = http.createServer({}, (request, responce) => {
     const { url, method } = request;
 
     try {
         if (!url.includes('/api/users')) {
-            res.statusCode = 404
-            res.end('Resource that you request doesnt exists')
+            responce.statusCode = 404
+            responce.end('Resource that you request doesnt exists')
         }
         const urlArray = url.split('/').slice(3)
-        console.log(urlArray)
 
         switch (method) {
             case 'GET':
                 // all users
                 if (url === '/api/users') {
-                    res.statusCode = 200;
+                    responce.statusCode = 200;
                     const result = users.length ? users : []
-                    res.end(JSON.stringify(result));
+                    responce.end(JSON.stringify(result));
                 } else if (urlArray[0] && validateUuid(urlArray[0])) {
                     // valid user
-                    const userExists = users.find(user => user === urlArray[0])
 
-                    if (userExists) {
-                        res.statusCode = 200
-                        res.end(createMessage(urlArray[0]))
+                    if (userExists(users, urlArray[0])) {
+                        responce.statusCode = 200
+                        responce.end(createMessage(urlArray[0]))
                     } else {
-                        res.statusCode = 404;
-                        res.end(createMessage('User not found'));
+                        responce.statusCode = 404;
+                        responce.end(createMessage('User not found'));
                     }
+
                 } else {
-                    res.statusCode = 400;
-                    res.end(createMessage('Invalid userId'))
+                    responce.statusCode = 400;
+                    responce.end(createMessage('Invalid userId'))
                 }
+
+                responce.writeHead(404);
+                responce.end('not found\n')
                 break;
 
             case 'POST':
-                res.writeHead(200);
-                res.end('POST method called\n');
+
+                urlArray
+                let data = '';
+
+                request.on('data', body => data += body);
+                request.on('end', () => {
+
+                    const newUser = JSON.parse(data);
+                    newUser.id = createUUID();
+                    if (validateUserData(newUser)) {
+                        users.push(newUser);
+                        responce.statusCode = 200;
+                        responce.end(JSON.stringify(newUser));
+                    } else {
+                        responce.statusCode = 400;
+                        responce.end(createMessage('request body does not contain required fields'));
+                    }
+
+                })
+                // responce.writeHead(200);
+                // responce.end('POST method called\n');
                 break;
-            case 'UPDATE':
-                res.writeHead(200);
-                res.end('UPDATE method called\n');
+            case 'PUT':
+                responce.writeHead(200);
+                responce.end('PUT method called\n');
                 break;
             case 'DELETE':
-                res.writeHead(200);
-                res.end('DELETE method called\n');
+
+                if (userExists(users, urlArray[0])) {
+                    responce.writeHead(200)
+                    responce.end('deleted')
+                } else {
+                    // valid uuid 
+                    if (validateUuid(urlArray[0])) {
+                        responce.writeHead(404)
+                        responce.end('User with this id doesnt exist')
+                    } else {
+                        responce.writeHead(400)
+                        responce.end('Provided Id is not valid')
+                    }
+                }
                 break;
 
             default:
