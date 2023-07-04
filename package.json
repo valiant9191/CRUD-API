@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "start:dev": "nodemon ./src/index.mjs"
+    "start:dev": "nodemon ./src/index.js"
   },
   "repository": {
     "type": "git",
@@ -20,5 +20,8 @@
     "nodemon": "^2.0.22",
     "webpack": "^5.88.1",
     "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "uuid": "^9.0.0"
   }
 }
