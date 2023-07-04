@@ -59,8 +59,6 @@ const server = http.createServer({}, (request, responce) => {
                 break;
 
             case 'POST':
-
-
                 let data = '';
 
                 request.on('data', body => data += body);
@@ -82,8 +80,34 @@ const server = http.createServer({}, (request, responce) => {
 
                 break;
             case 'PUT':
-                responce.writeHead(200);
-                responce.end('PUT method called\n');
+
+                if (validateUuid(urlArray[0])) {
+                    if (userExists(users, urlArray[0])) {
+                        let data = '';
+
+                        request.on('data', body => data += body);
+                        request.on('end', () => {
+
+                            const userUpdate = JSON.parse(data);
+                            userUpdate.id = urlArray[0];
+
+                            const index = users.filter((el, index) => {
+                                (el.id === urlArray[0]) && index
+                            })
+                            users[index] = userUpdate;
+                            responce.writeHead(200)
+                            responce.end('USer with id: ' + urlArray[0] + ' updated')
+                        })
+                    } else {
+                        responce.writeHead(404)
+                        responce.end('User with this id doesnt exist')
+                    }
+
+                } else {
+                    responce.writeHead(400)
+                    responce.end('Provided Id is not valid')
+                }
+
                 break;
             case 'DELETE':
 
@@ -92,8 +116,7 @@ const server = http.createServer({}, (request, responce) => {
                         (el.id === urlArray[0]) && index
                     })
                     users.splice(index, 1)
-                    console.log(users)
-                    responce.writeHead(200)
+                    responce.writeHead(204)
                     responce.end('USer with id: ' + urlArray[0] + ' deleted')
                 } else {
                     // valid uuid 
